@@ -1,12 +1,19 @@
-wordpress:
-   image: wordpress
-   volumes:
-   - .:/var/www/html   #montar el directorio actual de la maquina hospedadora en el /var del contenedor a crearse
-   links:
-   - db:mysql
-   ports:
-   - 8080:80
-db:
-   image: mariadb
-   environment:
-   MYSQL_ROOT_PASSWORD: password
+version: '3.7'
+
+services:
+  wordpress:
+    image: wordpress
+    volumes:
+    - ./wordpress/var:/var/www/html   
+    #montar el directorio actual de la maquina hospedadora en el /var del contenedor a crearse
+    - ./wp-content/plugins:/var/www/html/wp-content/plugins/
+    - ./wp-content/themes:/var/www/html/wp-content/themes/
+    links:
+    - db:mysql
+    ports:
+    - 8080:80
+  db:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: password # Password MYSQL Root
+      #MYSQL_ROOT_PASSWORD: password # Password MYSQL Root

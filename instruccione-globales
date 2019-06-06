@@ -1,0 +1,106 @@
+Docker Compose y WordPress: juntos pero no revueltos
+Desde hace ya algunos meses estamos trabajando con Docker, un software/plataforma para desarrolladores y administradores de sistema usado también por los peces gordos de la web como Spotify o Taiga, una alternativa a Trello con software libre que también usamos desde hace un tiempo.
+
+Quizá aquellas que aún no conocen Docker se pregunten qué es lo que esta nueva plataforma viene a solucionar o a mejorar. Destacamos sus principales ventajas en los siguientes puntos:
+
+– Agilidad: El despliegue de una aplicación con Docker es mucho más rápido y sencillo.
+
+– Portabilidad: Nuestras aplicaciones se podrán ejecutar en cualquier otra máquina en la que esté instalado Docker.
+
+– Flexibilidad: Docker se adapta a nuestros requisitos, pues “viene con las pilas puestas, pero se pueden sacar”, esto es, incorpora soluciones nativas pero es susceptible de integrarse con otras.
+
+– Escalabilidad: Una de las bazas más interesantes de Docker es la facilidad con la que escala, tanto horizontal como verticalmente. En relación a la escalabilidad de Docker es especialmente interesante Docker Swarm.
+
+– muchas más que puedes descubrir tú misma…
+
+Docker tiene un repositorio propio de aplicaciones (Registry Hub) en el que podemos encontrar imágenes de nuestras aplicaciones preferidas, incluyendo WordPress, por supuesto. Sin embargo, nuestra experiencia usando Docker y WordPress conjuntamente nos ha enseñado que la solución oficial no resuelve todos los problemas que el diseñador o desarrollador se encuentra. El principal es la posibilidad de instalar nuevos plugins y temas, así como modificar los existentes sin necesidad de modificar la imagen original, esto es, de manera que los cambios que realicemos en el código se incorporen al proyecto automáticamente, como haríamos con cualquier instalación de WordPress. Otra cuestión relevante que creemos que se puede mejorar es el proceso de creación de los contenedores, esto es, el despliegue de la aplicación o su instalación en un determinado host. Pero no nos vamos muy lejos, pues la solución viene de la mano de Docker, con Docker Compose, una aplicación de reciente incorporación a la caja de herramientas de Docker, junto a Swarm (que ya hemos mencionado) y Docker Machine.
+
+Excede el alcance de este pequeño post explicar con detalles las características de Docker, así como las posibilidades que se abren y que constantemente dan lugar a nuevas aplicaciones. Explico pues cual es el proceso para tener una instalación de WordPress dockerizada.
+
+En primer lugar deberemos instalar en nuestro host Docker y Docker Compose.
+
+A continuación descargaremos la última versión de WordPress disponible con este comando:
+
+$ curl https://wordpress.org/latest.tar.gz | tar -xvzf -
+
+En el directorio en el que hemos descomprimido WordPress crearemos ahora un par de archivos:
+
+a) docker-compose.yml
+
+Este archivo nos permitirá definir como queremos que se integren los dos contenedores que necesitamos, WordPress y una base de datos MySql, y también nos permitirá definir un volumen de datos para poder modificar los archivos de nuestra aplicación: instalar plugins, modificar el wp-config.php, etc.
+
+El contenido de este archivo será el siguiente:
+
+wordpress:
+   image: wordpress
+   volumes:
+   - .:/var/www/html
+   links:
+   - db:mysql
+   ports:
+   - 8080:80
+db:
+   image: mariadb
+   environment:
+   MYSQL_ROOT_PASSWORD: password
+Sin entrar en detalles acerca de la sintaxis de este archivo, solamente indicar que en él estamos indicando los dos contenedores (wordpress y db) que formarán nuestra aplicación con Docker, así como la imágenes de las que dependen (wordpress y mariadb), estableciendo un enlace entre ellos, redirigiendo el puerto 8080 de nuestro host al puerto 80 de la aplicación y montando el directorio actual del host en la ruta /var/www/html del contenedor, esto es, donde están los archivos de WordPress, de manera que estamos utilizando los archivos que previamente hemos descargado de la web oficial de WordPress.
+
+b) wp-config.php
+
+Este archivo lo podemos obtener copiando el existente wp-config-sample.php pero modificando algunos datos, de manera que el archivo definitivo sea algo parecido a:
+
+define(‘DB_NAME’, ‘wordpress’);
+
+define(‘DB_USER’, ‘root’);
+
+define(‘DB_PASSWORD’, ‘password’);
+
+define(‘DB_HOST’, “mysql”);
+
+define(‘DB_CHARSET’, ‘utf8’);
+
+define(‘DB_COLLATE’, ”);
+
+define(‘AUTH_KEY’, ‘put your unique phrase here’);
+
+define(‘SECURE_AUTH_KEY’, ‘put your unique phrase here’);
+
+define(‘LOGGED_IN_KEY’, ‘put your unique phrase here’);
+
+define(‘NONCE_KEY’, ‘put your unique phrase here’);
+
+define(‘AUTH_SALT’, ‘put your unique phrase here’);
+
+define(‘SECURE_AUTH_SALT’, ‘put your unique phrase here’);
+
+define(‘LOGGED_IN_SALT’, ‘put your unique phrase here’);
+
+define(‘NONCE_SALT’, ‘put your unique phrase here’);
+
+$table_prefix = ‘wp_’;
+
+define(‘WPLANG’, ”);
+
+define(‘WP_DEBUG’, false);
+
+if ( !defined(‘ABSPATH’) )
+
+define(‘ABSPATH’, dirname(__FILE__) . ‘/’);
+
+require_once(ABSPATH . ‘wp-settings.php’);
+
+Una vez que hayamos incorporado estos dos archivos, y habiendo instalado ya Docker y Docker Compose en nuestra máquina solamente tendremos que ejecutar el siguiente comando para instalar WordPress
+
+docker-compose up
+
+y ya podremos acceder a nuestra instalación desde la url
+
+http://localhost:8080
+
+Un último detalle importante si queremos que nuestra instalación de WordPress sea operativa es cambiar los permisos en el directorio principal, permitiendo lectura y escritura al daemon de Docker
+
+sudo chmod -R 777 wordpress
+
+Published 22 Sep 2015
+Sitio web personal: artículos, proyectos y material de autobombo
+David A. Lareo on Twitter
